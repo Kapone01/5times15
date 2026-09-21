@@ -13,21 +13,156 @@ button:active{transform:scale(.97)}.board-wrap{flex:1;display:flex;align-items:c
 .card{position:relative;border:1px solid var(--line);border-radius:13px;background:var(--card);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:clamp(24px,4vw,38px);font-weight:750;user-select:none;-webkit-user-select:none;cursor:pointer;overflow:hidden;padding-left:32px;touch-action:manipulation}
 .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:32px;background:var(--c)}
 .card.empty{background:transparent;border:2px dashed #aaa397;box-shadow:none;padding:0}.card.empty::before{display:none}
-.card.movable{outline:4px solid #315b45;outline-offset:2px}.status{text-align:center;min-height:52px;font-size:15px;padding:6px}.status strong{display:block;font-size:17px}.rules{font-size:12px;opacity:.6;text-align:center;margin-top:2px}
+.card.empty.target{border:2px dashed #315b45;background:#e7f1ea}
+.card.movable{outline:3px solid #3b6fa0;outline-offset:1px}
+.card.shiftrun{outline:3px dashed #a56a9e;outline-offset:1px}
+.card.selected{outline:4px solid #c94f4f;outline-offset:2px}
+.status{text-align:center;min-height:52px;font-size:15px;padding:6px}.status strong{display:block;font-size:17px}.rules{font-size:12px;opacity:.6;text-align:center;margin-top:2px}
 @media (orientation:portrait){.board{height:min(70vh,680px);width:min(78vw,500px)}.card{font-size:24px;padding-left:26px}.card::before{width:26px}}
 </style></head><body><div class="app">
 <header><div><h1>5×15</h1><div class="sub">iPad offline prototype</div></div><div class="buttons"><button id="undo" type="button">↶ Undo</button><button id="new" type="button">New game</button></div></header>
 <div class="board-wrap"><div id="board" class="board"></div></div><div id="status" class="status"></div>
-<div class="rules">Tap a card to select it. Tap an empty space to move it.</div></div>
+<div class="rules">Blue outline = can move. Tap it, then tap a highlighted space. Dashed purple run (…13·14·15) can be tapped to slide it down.</div></div>
 <script>
-const KEY="5x15-v2",colors=["#e8c547","#e58b3a","#5c9b55","#5b83c4","#a56a9e"];let state={cards:[],history:[]},selected=null;
+const KEY="5x15-v3",colors=["#e8c547","#e58b3a","#5c9b55","#5b83c4","#a56a9e"];
+const COLS=5,ROWS=16,SHIFT_LEN=3; // sort target: each column becomes one color, ascending 1..15 top-to-bottom
+let state={cards:[],history:[]},selected=null,targets=[];
+
+function idx(r,c){return r*COLS+c}
+function rowOf(i){return Math.floor(i/COLS)}
+function colOf(i){return i%COLS}
 function shuffled(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function newGame(){let a=[];for(let c=0;c<5;c++)for(let n=1;n<=15;n++)a.push({c,n});shuffled(a);a.splice(0,0,null,null,null,null,null);state={cards:a,history:[]};selected=null;save();render()}
+
+// --- setup: mirrors the physical 5x15 rules -- the five 1s are pulled out, shuffled
+// and dealt into row 0 (one per column, like the "16th column" in the physical game).
+// The remaining 70 cards (values 2-15) are shuffled into the 75 cells of rows 1-15,
+// leaving exactly 5 cells empty at random -- so there are always 5 gaps on the board.
+function newGame(){
+  let ones=[],rest=[];
+  for(let c=0;c<5;c++)for(let n=1;n<=15;n++)(n===1?ones:rest).push({c,n});
+  shuffled(ones);shuffled(rest);
+  let cards=new Array(COLS*ROWS).fill(null);
+  for(let c=0;c<COLS;c++)cards[idx(0,c)]=ones[c];
+  let slots=[];for(let r=1;r<ROWS;r++)for(let c=0;c<COLS;c++)slots.push(idx(r,c));
+  shuffled(slots);
+  for(let k=0;k<rest.length;k++)cards[slots[k]]=rest[k];
+  state={cards,history:[]};selected=null;targets=[];save();render()
+}
 function save(){localStorage.setItem(KEY,JSON.stringify(state))}
-function load(){try{let x=JSON.parse(localStorage.getItem(KEY));if(x&&x.cards&&x.cards.length===80){state=x;return true}}catch(e){}return false}
-function render(){let b=document.getElementById("board");b.innerHTML="";state.cards.forEach((x,i)=>{let d=document.createElement("div");d.className="card"+(!x?" empty":"");d.dataset.i=i;if(x){d.style.setProperty("--c",colors[x.c]);d.textContent=x.n;d.addEventListener("click",()=>select(i),{passive:true})}else d.addEventListener("click",()=>emptyTap(i),{passive:true});b.appendChild(d)});document.getElementById("status").innerHTML="<strong>"+(selected!==null?"Now tap an empty space":"Tap a card to select it")+"</strong>"+(state.history.length?"Undo is available":"");if(selected!==null){let e=document.querySelector('.card[data-i="'+selected+'"]');if(e)e.classList.add("movable")}}
-function select(i){if(state.cards[i]){selected=i;render()}}
-function emptyTap(i){if(selected===null)return;state.history.push(state.cards.map(x=>x?{...x}:null));[state.cards[selected],state.cards[i]]=[state.cards[i],state.cards[selected]];selected=null;save();render()}
-document.getElementById("new").onclick=()=>{if(confirm("Start a new game?"))newGame()};document.getElementById("undo").onclick=()=>{if(state.history.length){state.cards=state.history.pop();selected=null;save();render()}};
-if(!load())newGame();else render();if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
+function load(){try{let x=JSON.parse(localStorage.getItem(KEY));if(x&&x.cards&&x.cards.length===COLS*ROWS){state=x;selected=null;targets=[];return true}}catch(e){}return false}
+function cardAt(r,c){if(r<0||r>=ROWS)return undefined;return state.cards[idx(r,c)]}
+
+// A gap accepts a card if: it's in row 0 (only a "1", of any colour, may anchor a
+// column there), or it matches the colour of the card above and is 1 higher
+// ("building down"), or matches the colour of the card below and is 1 lower
+// ("building up"). Whichever of the two neighbours actually holds a card decides.
+function legalTestForGap(gapIndex){
+  if(state.cards[gapIndex])return null;
+  const r=rowOf(gapIndex),c=colOf(gapIndex);
+  if(r===0)return card=>card.n===1;
+  const above=cardAt(r-1,c),below=cardAt(r+1,c);
+  return card=>(above&&card.c===above.c&&card.n===above.n+1)||(below&&card.c===below.c&&card.n===below.n-1);
+}
+function legalDestinationsFor(srcIndex){
+  const card=state.cards[srcIndex];if(!card)return[];
+  let out=[];
+  for(let i=0;i<state.cards.length;i++){
+    if(state.cards[i])continue;
+    const test=legalTestForGap(i);
+    if(test&&test(card))out.push(i)
+  }
+  return out
+}
+
+// The shift rule: a same-colour run ending in 15 (length SHIFT_LEN, e.g. 13-14-15)
+// can never grow further downward (nothing follows 15), so if there's a free cell
+// right below it, the whole run may slide down by one, opening a fresh gap above it.
+function findShiftableRuns(){
+  let runs=[];
+  for(let c=0;c<COLS;c++){
+    for(let r0=0;r0+SHIFT_LEN-1<ROWS;r0++){
+      let ok=true,color=null;
+      for(let k=0;k<SHIFT_LEN;k++){
+        const card=cardAt(r0+k,c),want=15-SHIFT_LEN+1+k;
+        if(!card||card.n!==want||(color!==null&&card.c!==color)){ok=false;break}
+        color=card.c
+      }
+      const destRow=r0+SHIFT_LEN;
+      if(ok&&destRow<ROWS&&!cardAt(destRow,c))runs.push({col:c,topRow:r0})
+    }
+  }
+  return runs
+}
+function doShift(run){
+  state.history.push(state.cards.map(x=>x?{...x}:null));
+  const{col,topRow}=run;
+  for(let k=SHIFT_LEN-1;k>=0;k--)state.cards[idx(topRow+k+1,col)]=state.cards[idx(topRow+k,col)];
+  state.cards[idx(topRow,col)]=null;
+  selected=null;targets=[];save();render()
+}
+function anyMovesLeft(){
+  for(let i=0;i<state.cards.length;i++)if(state.cards[i]&&legalDestinationsFor(i).length)return true;
+  return findShiftableRuns().length>0
+}
+function isWon(){
+  for(let c=0;c<COLS;c++){
+    let seq=[],color=null;
+    for(let r=0;r<ROWS;r++){const card=cardAt(r,c);if(card){if(color===null)color=card.c;else if(card.c!==color)return false;seq.push(card)}}
+    if(seq.length!==15)return false;
+    for(let k=0;k<15;k++)if(seq[k].n!==k+1)return false
+  }
+  return true
+}
+
+function select(i){
+  const dests=legalDestinationsFor(i);
+  if(!dests.length){selected=null;targets=[];render();return}
+  selected=i;targets=dests;render()
+}
+function tryMoveTo(i){
+  if(selected===null||!targets.includes(i))return;
+  state.history.push(state.cards.map(x=>x?{...x}:null));
+  state.cards[i]=state.cards[selected];state.cards[selected]=null;
+  selected=null;targets=[];save();render()
+}
+
+function render(){
+  const b=document.getElementById("board");b.innerHTML="";
+  const shiftRuns=findShiftableRuns();
+  const shiftrunCells=new Set(),shiftTapCell=new Map();
+  shiftRuns.forEach(run=>{for(let k=0;k<SHIFT_LEN;k++)shiftrunCells.add(idx(run.topRow+k,run.col));shiftTapCell.set(idx(run.topRow+SHIFT_LEN-1,run.col),run)});
+
+  state.cards.forEach((x,i)=>{
+    let d=document.createElement("div");
+    d.className="card"+(!x?" empty":"");
+    d.dataset.i=i;
+    if(x){
+      d.style.setProperty("--c",colors[x.c]);d.textContent=x.n;
+      if(i===selected)d.classList.add("selected");
+      else if(legalDestinationsFor(i).length||shiftTapCell.has(i))d.classList.add("movable");
+      if(shiftrunCells.has(i))d.classList.add("shiftrun");
+      d.addEventListener("click",()=>{
+        if(selected===null&&shiftTapCell.has(i)){doShift(shiftTapCell.get(i));return}
+        select(i)
+      },{passive:true})
+    }else{
+      if(targets.includes(i))d.classList.add("target");
+      d.addEventListener("click",()=>tryMoveTo(i),{passive:true})
+    }
+    b.appendChild(d)
+  });
+
+  const won=isWon();
+  let msg;
+  if(won)msg="<strong>🎉 Solved!</strong>All five colours sorted 1–15.";
+  else if(selected!==null)msg="<strong>Tap a highlighted space</strong>";
+  else if(!anyMovesLeft())msg="<strong>No moves left</strong>Start a new game.";
+  else msg="<strong>Tap a highlighted card</strong>"+(state.history.length?" · Undo available":"");
+  document.getElementById("status").innerHTML=msg
+}
+
+document.getElementById("new").onclick=()=>{if(confirm("Start a new game?"))newGame()};
+document.getElementById("undo").onclick=()=>{if(state.history.length){state.cards=state.history.pop();selected=null;targets=[];save();render()}};
+if(!load())newGame();else render();
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
 </script></body></html>
