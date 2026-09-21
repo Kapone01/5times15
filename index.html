@@ -1,94 +1,33 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#f3efe5">
-<link rel="manifest" href="manifest.json">
-<title>5×15</title>
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#f4f1e8"><link rel="manifest" href="manifest.json"><title>5×15</title>
 <style>
-:root{--bg:#f3efe5;--panel:#faf8f2;--ink:#24231f;--muted:#77736a;--line:#c9c3b6;--accent:#355f4a;--accent2:#e8efe9;--red:#9b4b43;}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;overflow:hidden}body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-.app{height:100%;max-width:1180px;margin:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.title h1{font-size:28px;line-height:1;margin:0;font-weight:800}.title p{margin:4px 0 0;font-size:12px;color:var(--muted)}.actions{display:flex;gap:7px}.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;padding:9px 12px;font-weight:700;font-size:14px}.btn:active{transform:scale(.97)}
-#game{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}.board{display:grid;grid-template-columns:repeat(15,minmax(25px,1fr));gap:5px;width:min(96vw,1120px);height:min(72vh,610px)}.cell{position:relative;border:1px solid var(--line);border-radius:7px;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:clamp(12px,2.1vw,22px);font-weight:800;box-shadow:0 1px 2px #0001;user-select:none;touch-action:manipulation}.cell.empty{background:transparent;border:1px dashed #aaa398;box-shadow:none}.cell.selected{outline:3px solid var(--accent);background:var(--accent2)}.cell.legal{box-shadow:0 0 0 3px #355f4a55}.cell.fixed{background:#ebe8de}.dot{position:absolute;top:3px;left:4px;width:5px;height:5px;border-radius:50%;background:var(--c)}
-.status{min-height:50px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:8px 12px;font-size:13px}.status strong{display:block;font-size:15px;margin-bottom:2px}.status .hint{color:var(--muted)}.win{color:var(--accent)}
-.legend{display:flex;justify-content:center;gap:16px;font-size:11px;color:var(--muted)}.legend span:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-right:4px}
-@media (orientation:portrait){.app{padding:10px}.board{width:96vw;height:min(74vh,700px);gap:4px}.cell{font-size:12px;border-radius:5px}.title h1{font-size:24px}.btn{padding:8px 9px}.legend{display:none}}
-</style>
-</head>
-<body>
-<div class="app">
-  <div class="top"><div class="title"><h1>5×15</h1><p>Friedemann Friese · offline prototype</p></div><div class="actions"><button class="btn" id="undo">↶ Undo</button><button class="btn" id="new">New</button></div></div>
-  <div id="game"><div id="board" class="board"></div></div>
-  <div id="status" class="status"></div>
-  <div class="legend"><span style="--c:#d75b52">red</span><span style="--c:#e3aa35">yellow</span><span style="--c:#5d9b66">green</span><span style="--c:#4e7fb5">blue</span><span style="--c:#8c67a9">purple</span></div>
-</div>
+:root{--bg:#f4f1e8;--ink:#202020;--card:#fffdf7;--line:#c9c3b6;--shadow:0 2px 7px #0002}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;overflow:hidden;touch-action:manipulation}
+body{display:flex;justify-content:center}.app{width:100%;height:100%;max-width:1100px;padding:16px 20px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}h1{font-size:28px;margin:0;font-weight:750}.sub{font-size:13px;opacity:.65;margin-top:2px}
+.buttons{display:flex;gap:8px}button{border:1px solid var(--line);background:#fffaf0;border-radius:12px;padding:10px 14px;font-size:15px;font-weight:650;box-shadow:var(--shadow)}
+button:active{transform:scale(.97)}.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:min(92vw,800px);height:min(74vh,780px)}
+.card{position:relative;border:1px solid var(--line);border-radius:13px;background:var(--card);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:clamp(24px,4vw,38px);font-weight:750;user-select:none;-webkit-user-select:none;cursor:pointer;overflow:hidden;padding-left:32px;touch-action:manipulation}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:32px;background:var(--c)}
+.card.empty{background:transparent;border:2px dashed #aaa397;box-shadow:none;padding:0}.card.empty::before{display:none}
+.card.movable{outline:4px solid #315b45;outline-offset:2px}.status{text-align:center;min-height:52px;font-size:15px;padding:6px}.status strong{display:block;font-size:17px}.rules{font-size:12px;opacity:.6;text-align:center;margin-top:2px}
+@media (orientation:portrait){.board{height:min(70vh,680px);width:min(78vw,500px)}.card{font-size:24px;padding-left:26px}.card::before{width:26px}}
+</style></head><body><div class="app">
+<header><div><h1>5×15</h1><div class="sub">iPad offline prototype</div></div><div class="buttons"><button id="undo" type="button">↶ Undo</button><button id="new" type="button">New game</button></div></header>
+<div class="board-wrap"><div id="board" class="board"></div></div><div id="status" class="status"></div>
+<div class="rules">Tap a card to select it. Tap an empty space to move it.</div></div>
 <script>
-const KEY='5x15-offline-v1';
-const colors=['#d75b52','#e3aa35','#5d9b66','#4e7fb5','#8c67a9'];
-let S={grid:[],history:[],selected:null,moves:0};
-const cloneGrid=g=>g.map(r=>r.map(x=>x?{...x}:null));
-function save(){localStorage.setItem(KEY,JSON.stringify({grid:S.grid,history:S.history,moves:S.moves}));}
-function load(){try{let x=JSON.parse(localStorage.getItem(KEY));if(x?.grid?.length===5&&x.grid.every(r=>r.length===15)){S={...x,selected:null};return true}}catch(e){}return false}
-function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function newGame(){
-  // Official structure: 5 colours, values 1–15, one empty space in each row.
-  // The five 1s begin at the left edge; remaining tiles are randomized.
-  let rest=[];for(let c=0;c<5;c++)for(let n=2;n<=15;n++)rest.push({c,n});shuffle(rest);
-  let g=Array.from({length:5},()=>Array(15).fill(null));
-  for(let r=0;r<5;r++){g[r][0]={c:r,n:1};let positions=[...Array(14).keys()].map(x=>x+1);shuffle(positions);positions.forEach(p=>{if(rest.length)g[r][p]=rest.pop()})}
-  // Create exactly one gap in each row, keeping the 1 in place.
-  for(let r=0;r<5;r++){let candidates=[...Array(14).keys()].map(x=>x+1);let p=candidates[Math.floor(Math.random()*candidates.length)];g[r][p]=null}
-  S={grid:g,history:[],selected:null,moves:0};save();render();
-}
-function gapPositions(){let out=[];for(let r=0;r<5;r++)for(let c=0;c<15;c++)if(!S.grid[r][c])out.push([r,c]);return out}
-function legalMove(r,c){
-  const x=S.grid[r][c];if(!x)return false;
-  const g=gapPositions();
-  // A tile can fill a gap if it is immediately preceded by same-colour n-1,
-  // or immediately followed by same-colour n+1. This captures the core 5×15 placement rule.
-  return g.some(([gr,gc])=>{
-    if(gr!==r)return false;
-    const left=gc>0?S.grid[r][gc-1]:null, right=gc<14?S.grid[r][gc+1]:null;
-    return (left&&left.c===x.c&&left.n===x.n-1)||(right&&right.c===x.c&&right.n===x.n+1);
-  });
-}
-function validTarget(r,c){
-  if(S.grid[r][c])return false;
-  const x=S.grid[S.selected.r][S.selected.c];if(!x)return false;
-  const left=c>0?S.grid[r][c-1]:null,right=c<14?S.grid[r][c+1]:null;
-  return r===S.selected.r&&((left&&left.c===x.c&&left.n===x.n-1)||(right&&right.c===x.c&&right.n===x.n+1));
-}
-function solved(){return S.grid.every((row,r)=>row.every((x,c)=>x&&x.c===r&&x.n===c+1));}
-function render(){
-  const b=document.getElementById('board');b.innerHTML='';
-  for(let r=0;r<5;r++)for(let c=0;c<15;c++){
-    const d=document.createElement('div');d.className='cell';d.dataset.r=r;d.dataset.c=c;const x=S.grid[r][c];
-    if(!x)d.classList.add('empty');else{d.textContent=x.n;d.style.setProperty('--c',colors[x.c]);const dot=document.createElement('i');dot.className='dot';d.appendChild(dot);}
-    if(S.selected&&S.selected.r===r&&S.selected.c===c)d.classList.add('selected');
-    if(S.selected&&validTarget(r,c))d.classList.add('legal');
-    d.onclick=()=>tap(r,c);b.appendChild(d);
-  }
-  const st=document.getElementById('status');
-  if(solved())st.innerHTML='<strong class="win">🎉 Solved!</strong><span class="hint">You sorted all five colours from 1 to 15.</span>';
-  else if(S.selected)st.innerHTML='<strong>Choose an empty space</strong><span class="hint">Green outline = legal destination.</span>';
-  else st.innerHTML='<strong>Select a movable tile</strong><span class="hint">A tile can move into a gap when it continues a same-colour sequence.</span>';
-  document.getElementById('undo').disabled=!S.history.length;
-}
-function tap(r,c){
-  if(solved())return;
-  if(S.selected){
-    if(validTarget(r,c)){
-      S.history.push(cloneGrid(S.grid));S.grid[r][c]=S.grid[S.selected.r][S.selected.c];S.grid[S.selected.r][S.selected.c]=null;S.moves++;S.selected=null;save();render();return;
-    }
-    if(S.grid[r][c]){S.selected={r,c};render();return}
-    S.selected=null;render();return;
-  }
-  if(S.grid[r][c]&&legalMove(r,c)){S.selected={r,c};render()}
-}
-document.getElementById('undo').onclick=()=>{if(!S.history.length)return;S.grid=S.history.pop();S.selected=null;S.moves=Math.max(0,S.moves-1);save();render()};
-document.getElementById('new').onclick=()=>{if(confirm('Start a new 5×15 game?'))newGame()};
-if(!load())newGame();else render();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
-</script>
-</body></html>
+const KEY="5x15-v2",colors=["#e8c547","#e58b3a","#5c9b55","#5b83c4","#a56a9e"];let state={cards:[],history:[]},selected=null;
+function shuffled(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function newGame(){let a=[];for(let c=0;c<5;c++)for(let n=1;n<=15;n++)a.push({c,n});shuffled(a);a.splice(0,0,null,null,null,null,null);state={cards:a,history:[]};selected=null;save();render()}
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function load(){try{let x=JSON.parse(localStorage.getItem(KEY));if(x&&x.cards&&x.cards.length===80){state=x;return true}}catch(e){}return false}
+function render(){let b=document.getElementById("board");b.innerHTML="";state.cards.forEach((x,i)=>{let d=document.createElement("div");d.className="card"+(!x?" empty":"");d.dataset.i=i;if(x){d.style.setProperty("--c",colors[x.c]);d.textContent=x.n;d.addEventListener("click",()=>select(i),{passive:true})}else d.addEventListener("click",()=>emptyTap(i),{passive:true});b.appendChild(d)});document.getElementById("status").innerHTML="<strong>"+(selected!==null?"Now tap an empty space":"Tap a card to select it")+"</strong>"+(state.history.length?"Undo is available":"");if(selected!==null){let e=document.querySelector('.card[data-i="'+selected+'"]');if(e)e.classList.add("movable")}}
+function select(i){if(state.cards[i]){selected=i;render()}}
+function emptyTap(i){if(selected===null)return;state.history.push(state.cards.map(x=>x?{...x}:null));[state.cards[selected],state.cards[i]]=[state.cards[i],state.cards[selected]];selected=null;save();render()}
+document.getElementById("new").onclick=()=>{if(confirm("Start a new game?"))newGame()};document.getElementById("undo").onclick=()=>{if(state.history.length){state.cards=state.history.pop();selected=null;save();render()}};
+if(!load())newGame();else render();if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
+</script></body></html>
